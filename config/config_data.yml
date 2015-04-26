@@ -1,0 +1,6 @@
+# This configuration file assumes that it is in the ruleparser directory, so for
+# example, (~/Documents/code/ruleparser/config/config_data.yml). Everything before
+# (/config/config_data.yml) will depend on where you have put this directory on
+# your computer. This config file uses relative paths that are sensitive to the
+# assumption that you will not move this folder relative to the other folders of
+# the project.
