@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from bs4 import NavigableString
 from bs4 import Comment
 from bs4 import Tag
-
+import re
 from config.config import CONFIG
 # TODO: Make this an uncollidable value or compare by identity
 DOES_NOT_OWN = "DOES NOT OWN THIS 193043249213" 
@@ -18,9 +18,12 @@ BAD = None
 # TODO: Is this neccessary?
 ROOT_NODE = None;
 
+IN_DIR = CONFIG.get_path("input_dir")
+OUT_DIR = CONFIG.get_path("output_dir")
+
 def filepath_to_name(path):
 	fileRegex = re.compile('.*\/(.*)\.')
-	name = fileRegex.search(filepath).group(1);
+	name = fileRegex.search(path).group(1);
 	return name;
 
 class NativeGraph(object):
@@ -46,7 +49,7 @@ class NativeGraph(object):
 		self._inner_graph = nx.Graph();
 		self.nodes = dict(); # maps node.hash (hash int) => node (NativeNode)
 
-		body = soup.body
+		body = self.html.body
 		root = NativeRootNode(self, body);
 		self.add_node(root);
 
