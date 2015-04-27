@@ -19,8 +19,8 @@ BAD = None
 ROOT_NODE = None;
 
 IN_DIR = CONFIG.get_path("input_dir")
-OUT_DIR = CONFIG.get_path("output_dir")
-
+OUT_JSON_DIR = CONFIG.get_path("output_json_dir")
+OUT_GEPHI_DIR = CONFIG.get_path("output_gephi_dir")
 def filepath_to_name(path):
 	fileRegex = re.compile('.*\/(.*)\.')
 	name = fileRegex.search(path).group(1);
@@ -94,7 +94,8 @@ class NativeGraph(object):
 
 	def dump_data(self):
 		info = json_graph.node_link_data(self._inner_graph)
-		json.dump(info, open(OUT_DIR + self.name + ".json", "w"), indent=4)
+		json.dump(info, open(OUT_JSON_DIR + self.name + ".json", "w"), indent=4)
+		# nx.write_gexf(self._inner_graph, (OUT_GEPHI_DIR + self.name + ".gex") )
 
 class NativeNode(object):
 
