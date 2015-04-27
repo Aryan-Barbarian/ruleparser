@@ -77,7 +77,7 @@ class NativeGraph(object):
 
 	def dump_data(self):
 		info = json_graph.node_link_data(self._inner_graph)
-		json.dump(info, open("../data/out/" + "umesh" + ".json", "w"))
+		json.dump(info, open("../data/out/" + "umesh" + ".json", "w"), indent=4)
 
 class NativeNode(object):
 
