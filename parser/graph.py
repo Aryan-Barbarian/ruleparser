@@ -12,7 +12,7 @@ from bs4 import Tag
 DOES_NOT_OWN = "DOES NOT OWN THIS 193043249213" 
 NEEDS_NO_PARENT = "THIS IS THE ROOT NODE 123182381924"
 
-
+BAD = None
 # TODO: Is this neccessary?
 ROOT_NODE = None;
 
@@ -76,8 +76,8 @@ class NativeGraph(object):
 		return [self.nodes[v] for u,v,d in G.edges_iter(data=True) if d['type']=='sibling']
 
 	def dump_data(self):
-		# print(json_graph.dumps(self._inner_graph))
-		pass
+		info = json_graph.node_link_data(self._inner_graph)
+		json.dump(info, open("../data/out/" + "umesh" + ".json", "w"))
 
 class NativeNode(object):
 
@@ -89,12 +89,16 @@ class NativeNode(object):
 			self.process(html);
 
 	def process(self, html):
+		# global BAD
 		if type(html) != BeautifulSoup and type(html) != Tag :
-			self.type = "string"
+			self["tag"] = "native_text"
 			return
+
+		self["tag"] = html.name
 		attribs = html.attrs # TODO: This is unicode
-		if len(attribs) == 0:
-			print((html));
+		# if len(attribs) == 0 and html is not None and html.name == "li":
+		# 	print((html));
+		# 	BAD = html
 		for key, val in attribs.items():
 			if key == "id":
 				key = "ID"
