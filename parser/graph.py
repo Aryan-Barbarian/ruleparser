@@ -2,6 +2,11 @@ import networkx as nx
 from networkx.readwrite import json_graph
 import json
 import random
+from bs4 import BeautifulSoup
+from bs4 import NavigableString
+from bs4 import Comment
+from bs4 import Tag
+
 
 # TODO: Make this an uncollidable value or compare by identity
 DOES_NOT_OWN = "DOES NOT OWN THIS 193043249213" 
@@ -26,6 +31,10 @@ class NativeGraph(object):
 		self._inner_graph = nx.Graph();
 		self.nodes = dict(); # maps node.hash (hash int) => node (NativeNode)
 
+		body = soup.body
+		root = NativeRootNode(self, body);
+		self.add_node(root);
+
 
 	"""
 	Takes in N1, N2, which are NativeNode objects.
@@ -40,13 +49,13 @@ class NativeGraph(object):
 			self.add_node(n2);
 
 		# TODO: does this hash them correctly?
-		self._inner_graph.add_edge(n1, n2, attr_dict=attribs);
+		self._inner_graph.add_edge(hash(n1), hash(n2), attr_dict=attribs);
 
 	def add_sibling_edge(self, n1, n2, dist):
 		attribs = {"type":"sibling", "dist":dist}
 		self.add_edge(n1, n2, attribs)
 
-	def add_parent_edge(self, n1, n2, dist):
+	def add_parent_edge(self, n1, n2):
 		attribs = {"type":"parent"}
 		self.add_edge(n1, n2, attribs)
 
@@ -54,10 +63,21 @@ class NativeGraph(object):
 	def add_node(self, node):
 		# TODO: at risk of duplicating?
 		attribs = node.get_attribute_dict();
+		self._inner_graph.add_node(hash(node), attribs)
+		self.nodes[hash(node)] = node;
 
 	def has_node(self, node):
+		return hash(node) in self._inner_graph # TODO: Is this right?
 
+	def get_children(self, node):
+		return [self.nodes[v] for u,v,d in G.edges_iter(data=True) if d['type']=='parent']
 
+	def get_siblings(self, node):
+		return [self.nodes[v] for u,v,d in G.edges_iter(data=True) if d['type']=='sibling']
+
+	def dump_data(self):
+		# print(json_graph.dumps(self._inner_graph))
+		pass
 
 class NativeNode(object):
 
@@ -66,36 +86,44 @@ class NativeNode(object):
 		self.graph = native_graph;
 		self._attr = dict();
 		if html is not None:
-			self.processTag(self, html);
+			self.process(html);
 
 	def process(self, html):
+		if type(html) != BeautifulSoup and type(html) != Tag :
+			self.type = "string"
+			return
 		attribs = html.attrs # TODO: This is unicode
+		if len(attribs) == 0:
+			print((html));
 		for key, val in attribs.items():
-			self._attr[key] = val
+			if key == "id":
+				key = "ID"
+			self[key] = val
 
 		child_HTMLs = html.contents
 		self.process_many(child_HTMLs)
+
+	def process_many(self, html_list):
+		children = list();
+		for html in html_list:
+			node = NativeNode(self.graph, html) # recursively create them
+			node.parent = self;		# set their parent
+
+			# set the sibling distance
+			for i in range(len(children)):
+				old = children[i]
+				index_to_add = len(children);
+				dist = index_to_add - i - 1;
+				self.graph.add_sibling_edge(old, node, dist)
+
+			children.append(node)
+			self.add_child(node);
 
 	def add_child(self, child):
 		child.parent = self
 		self.graph.add_parent_edge(self, child)
 
-	def process_many(self, html_list):
-		children = list();
-		for html in html_list:
-			node = NativeNode(html) # recursively create them
-			node.parent = self;		# set their parent
-
-			# set the sibling distance
-			for i in range(len(children))
-				old = children[i]
-				index_to_add = len(children);
-				dist = index_to_add - old - 1;
-				self.graph.add_sibling_edge(old, node, dist)
-
-			self.add_child(node);
-
-	def __getattr__(self, name):
+	def __getitem__(self, name):
 
 		# We reroute children / sibling request to graph
 		if name == "children":
@@ -110,13 +138,15 @@ class NativeNode(object):
 		else:
 			return DOES_NOT_OWN 
 
-	def __setattr__(self, name, value):
+	def __setitem__(self, name, value):
 		# TODO: Handle all the things we should pass to the graph instead
 		# WE MUST NEVER HAVE self.children OR self.siblings
-        self._attr[name] = value
+		if name == "_attr":
+			object.__setattr__(self, name, value)
+		self._attr[name] = value
 
-    def get_attribute_dict(self):
-    	return self._attr # TODO: Is this mutable right now?
+	def get_attribute_dict(self):
+		return self._attr # TODO: Is this mutable right now?
 
 
 class NativeRootNode(NativeNode):
@@ -128,10 +158,15 @@ class NativeRootNode(NativeNode):
 		self.parent = NEEDS_NO_PARENT
 
 		if html is not None:
-			self.processTag(html);
+			self.process(html);
 
 	def process(self, html):
 		ROOT_NODE = self;
-		child_HTMLs = HTML.contents;
+		child_HTMLs = html.contents;
 		self.process_many(child_HTMLs)
 
+
+
+soup = BeautifulSoup(open("../data/raw/umesh.html"))
+graph = NativeGraph(soup)
+graph.dump_data()
