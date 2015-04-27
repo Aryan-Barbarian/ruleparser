@@ -10,6 +10,8 @@ print(config_filepath);
 stream = open(config_filepath, "r")
 dictionary = yaml.load(stream)
 
+
+
 class Config(object):
 	def __init__(self, conf):
 		self.CONFIG = conf;
@@ -23,4 +25,11 @@ class Config(object):
 		else:
 			return None
 
+	def get_path(self, query):
+		to_add = self.__getattr__(query)
+		if to_add is not None:
+			return base_loc + to_add
+
+print("GONNA MAKE IT")
 CONFIG = Config(dictionary)
+print(CONFIG)

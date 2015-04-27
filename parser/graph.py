@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import networkx as nx
 from networkx.readwrite import json_graph
 import json
@@ -7,7 +9,7 @@ from bs4 import NavigableString
 from bs4 import Comment
 from bs4 import Tag
 
-
+from config.config import CONFIG
 # TODO: Make this an uncollidable value or compare by identity
 DOES_NOT_OWN = "DOES NOT OWN THIS 193043249213" 
 NEEDS_NO_PARENT = "THIS IS THE ROOT NODE 123182381924"
@@ -16,10 +18,23 @@ BAD = None
 # TODO: Is this neccessary?
 ROOT_NODE = None;
 
+def filepath_to_name(path):
+	fileRegex = re.compile('.*\/(.*)\.')
+	name = fileRegex.search(filepath).group(1);
+	return name;
+
 class NativeGraph(object):
 
-	def __init__(self, raw_html):
-		self.raw = raw_html;
+	def __init__(self, html=None, filename=None):
+		name = "unknown_file"
+		if filename is not None:
+			in_dir = CONFIG.get_path("input_dir")
+			path = in_dir + filename;
+			name = filepath_to_name(path);
+			html = BeautifulSoup(open(path))
+
+		self.name = name
+		self.html = html
 
 		"""
 		- Nodes:
@@ -171,6 +186,5 @@ class NativeRootNode(NativeNode):
 
 
 
-soup = BeautifulSoup(open("../data/raw/umesh.html"))
-graph = NativeGraph(soup)
+graph = NativeGraph(filename="umesh.html")
 graph.dump_data()

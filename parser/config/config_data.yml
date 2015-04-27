@@ -4,3 +4,8 @@
 # your computer. This config file uses relative paths that are sensitive to the
 # assumption that you will not move this folder relative to the other folders of
 # the project.
+
+# paths
+# To get the full paths, use the "get_path" method
+input_dir : "data/raw/"
+output_dir : "data/out/"
