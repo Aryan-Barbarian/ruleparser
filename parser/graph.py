@@ -31,8 +31,7 @@ class NativeGraph(object):
 	def __init__(self, html=None, filename=None):
 		name = "unknown_file"
 		if filename is not None:
-			in_dir = CONFIG.get_path("input_dir")
-			path = in_dir + filename;
+			path = IN_DIR + filename;
 			name = filepath_to_name(path);
 			html = BeautifulSoup(open(path))
 
@@ -95,7 +94,7 @@ class NativeGraph(object):
 
 	def dump_data(self):
 		info = json_graph.node_link_data(self._inner_graph)
-		json.dump(info, open("../data/out/" + "umesh" + ".json", "w"), indent=4)
+		json.dump(info, open(OUT_DIR + self.name + ".json", "w"), indent=4)
 
 class NativeNode(object):
 
