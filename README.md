@@ -42,3 +42,14 @@ Clearly, this is gross and unweildly. However, we can automate some rules to be 
 
 ```
 The syntax isn't implemented or designed yet, but this is just a possible query. However, we can then run some command to take the text of the final `a` tag that we found and put it into a graph.
+
+
+## Viewing Examples
+
+You can make an easy d3 visualization of the data. Go to `examples/` and start a server. If you have python, you can easily run 
+```bash
+python -m SimpleHTTPServer 8888
+```
+Then, navigate to `http://localhost:8888/`. 
+
+You may need to open `index.html` to edit the `filename` variable to whatever `.json` file you have in your directory.

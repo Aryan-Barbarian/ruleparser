@@ -37,6 +37,7 @@ var margin = {top: 20, right: 120, bottom: 20, left: 120},
   width = 10000 - margin.right - margin.left,
   height = 15000 - margin.top - margin.bottom;
 
+var filename = "umesh.json";
 
 var color = d3.scale.category20();
 
@@ -56,7 +57,7 @@ var svg = d3.select("body").append("svg")
   .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 // load the external data
-d3.json("umesh.json", function(error, treeData) {
+d3.json(filename, function(error, treeData) {
   root = treeData;
   update(root);
 });
