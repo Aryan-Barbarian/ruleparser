@@ -45,7 +45,7 @@ class NativeGraph(object):
 		- Edges:
 			contains all sibling / parent data
 		"""
-		self._inner_graph = nx.Graph();
+		self._inner_graph = nx.MultiDiGraph();
 		self.nodes = dict(); # maps node.hash (hash int) => node (NativeNode)
 
 		body = self.html.body
@@ -66,7 +66,7 @@ class NativeGraph(object):
 			self.add_node(n2);
 
 		# TODO: does this hash them correctly?
-		self._inner_graph.add_edge(hash(n1), hash(n2), type=attribs["type"]);
+		self._inner_graph.add_edge(hash(n1), hash(n2), key=hash(n1), attr_dict=attribs);
 
 	def add_sibling_edge(self, n1, n2, dist):
 		attribs = {"type":"sibling", "dist":dist}
@@ -80,16 +80,21 @@ class NativeGraph(object):
 	def add_node(self, node):
 		# TODO: at risk of duplicating?
 		attribs = node.get_attribute_dict();
-		self._inner_graph.add_node(hash(node), attribs)
+		self._inner_graph.add_node(hash(node), attr_dict=attribs)
 		self.nodes[hash(node)] = node;
 
 	def has_node(self, node):
 		return hash(node) in self._inner_graph # TODO: Is this right?
 
 	def get_children(self, node):
-		for n in self._inner_graph[hash(node)]:
-			print(self.nodes[n]);
-		return []
+		raw = self._inner_graph[hash(node)]
+		ans = []
+		for other, rest in raw.items():
+			to_add = self.nodes[other]
+			attribs = (rest.items()[0][1])
+			if attribs["type"] == "parent":
+				ans.append(to_add)
+		return ans
 	def get_siblings(self, node):
 		return [self.nodes[v] for u,v,d in self._inner_graph.edges_iter(data=True) if d['type']=='sibling']
 
