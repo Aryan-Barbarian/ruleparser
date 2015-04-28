@@ -66,7 +66,7 @@ class NativeGraph(object):
 			self.add_node(n2);
 
 		# TODO: does this hash them correctly?
-		self._inner_graph.add_edge(hash(n1), hash(n2), attr_dict=attribs);
+		self._inner_graph.add_edge(hash(n1), hash(n2), type=attribs["type"]);
 
 	def add_sibling_edge(self, n1, n2, dist):
 		attribs = {"type":"sibling", "dist":dist}
@@ -87,15 +87,19 @@ class NativeGraph(object):
 		return hash(node) in self._inner_graph # TODO: Is this right?
 
 	def get_children(self, node):
-		return [self.nodes[v] for u,v,d in G.edges_iter(data=True) if d['type']=='parent']
-
+		for n in self._inner_graph[hash(node)]:
+			print(self.nodes[n]);
+		return []
 	def get_siblings(self, node):
-		return [self.nodes[v] for u,v,d in G.edges_iter(data=True) if d['type']=='sibling']
+		return [self.nodes[v] for u,v,d in self._inner_graph.edges_iter(data=True) if d['type']=='sibling']
 
 	def dump_data(self):
 		info = json_graph.node_link_data(self._inner_graph)
 		json.dump(info, open(OUT_JSON_DIR + self.name + ".json", "w"), indent=4)
+		json.dump(ROOT_NODE.to_tree_dict(), open(OUT_JSON_DIR + self.name + ".json", "w"), indent=4)
 		# nx.write_gexf(self._inner_graph, (OUT_GEPHI_DIR + self.name + ".gex") )
+
+
 
 class NativeNode(object):
 
@@ -170,6 +174,14 @@ class NativeNode(object):
 	def get_attribute_dict(self):
 		return self._attr # TODO: Is this mutable right now?
 
+	def to_tree_dict(self):
+		# Returns a dict
+		attributes = self.get_attribute_dict();
+		if (self["children"] != None and len(self["children"]) > 0):
+			attributes["children"] = [child.to_tree_dict() for child in self["children"]]
+		attributes["name"] = self["tag"]
+		return attributes;
+
 
 class NativeRootNode(NativeNode):
 
@@ -183,6 +195,7 @@ class NativeRootNode(NativeNode):
 			self.process(html);
 
 	def process(self, html):
+		global ROOT_NODE;
 		ROOT_NODE = self;
 		child_HTMLs = html.contents;
 		self.process_many(child_HTMLs)
