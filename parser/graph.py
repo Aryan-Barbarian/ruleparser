@@ -10,6 +10,7 @@ from bs4 import Comment
 from bs4 import Tag
 import re
 from config.config import CONFIG
+import os
 # TODO: Make this an uncollidable value or compare by identity
 DOES_NOT_OWN = "DOES NOT OWN THIS 193043249213" 
 NEEDS_NO_PARENT = "THIS IS THE ROOT NODE 123182381924"
@@ -19,7 +20,8 @@ BAD = None
 ROOT_NODE = None;
 
 IN_DIR = CONFIG.get_path("input_dir")
-OUT_JSON_DIR = CONFIG.get_path("output_json_dir")
+OUT_FORCE_DIR = CONFIG.get_path("output_force_dir")
+OUT_TREE_DIR = CONFIG.get_path("output_tree_dir")
 OUT_GEPHI_DIR = CONFIG.get_path("output_gephi_dir")
 def filepath_to_name(path):
 	fileRegex = re.compile('.*\/(.*)\.')
@@ -100,8 +102,16 @@ class NativeGraph(object):
 
 	def dump_data(self):
 		info = json_graph.node_link_data(self._inner_graph)
-		json.dump(info, open(OUT_JSON_DIR + self.name + ".json", "w"), indent=4)
-		json.dump(ROOT_NODE.to_tree_dict(), open(OUT_JSON_DIR + self.name + ".json", "w"), indent=4)
+
+		if not os.path.exists(os.path.dirname(OUT_FORCE_DIR)):
+		    os.makedirs(os.path.dirname(OUT_FORCE_DIR))
+		if not os.path.exists(os.path.dirname(OUT_TREE_DIR)):
+		    os.makedirs(os.path.dirname(OUT_TREE_DIR))
+		if not os.path.exists(os.path.dirname(OUT_GEPHI_DIR)):
+		    os.makedirs(os.path.dirname(OUT_GEPHI_DIR))
+
+		json.dump(info, open(OUT_FORCE_DIR + self.name + ".json", "w"), indent=4)
+		json.dump(ROOT_NODE.to_tree_dict(), open(OUT_TREE_DIR + self.name + ".json", "w"), indent=4)
 		# nx.write_gexf(self._inner_graph, (OUT_GEPHI_DIR + self.name + ".gex") )
 
 
