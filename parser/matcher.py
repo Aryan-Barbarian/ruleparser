@@ -1,5 +1,5 @@
 
-
+RULE_REGEX = "(\[[^\]]*\])((=>|==)[\(|\[].*|(\(.*\)))"
 class RuleEngine(object):
 	def __init__(self, rule_dict, graph):
 
@@ -37,18 +37,24 @@ class RuleEngine(object):
 
 class Rule(object):
 	def __init__(self, match_string, function):
-		self.rule_stack = self.parse(match_string)
+		self.root_node = self.parse(match_string)
 		self.function = function
 
 	"""
 	INPUT - 
-		Takes in a string like "([div : {class=hello}] => [TEXT_ONE : {tag=span, class=sup}] )"
+		Takes in a string like "([div : {class=hello}] => [TEXT_ONE : {tag=span, class=sup}])"
 
 	OUTPUT -
-		A list of [RuleNode, transition, RuleNode, ...] objects
-		[RuleNode(name=div, {tag=div, class=hello}), "=>", RuleNode(name=TEXT_ONE, {tag=span, class=sup}) ]
+		A RuleNode object, which is like a linked list which contains data about the next nodes
+		RuleNode(name=div, {tag=div, class=hello}, [("=>", RuleNode(name=TEXT_ONE, {tag=span, class=sup})]))
 	"""
 	def parse(self, match_string):
+
+		tokens = self.tokenize(match_string)
+
+	def tokenize(self, match_string):
+		if (match_string[0] == "("):
+			match_string = match_string[1:-1]; # Strip surrounding parenthesis
 
 
 	"""
@@ -57,7 +63,7 @@ class Rule(object):
 		1 if the snake matches this rule partially (it hasn't been ruled out)
 		0 if the snake conflicts with this rule
 	"""
-	def matches(self, snake):
+	def check(self, node):
 
 
 	def execute(self):
@@ -86,27 +92,27 @@ class RuleNode(object):
 	"""
 	def matches(self, native_node):
 
-class Snake(object):
+# class Snake(object):
 
-	def __init__(self, rules, root_node):
-		self.start = root_node;
-		self.nodes = list(start);
-		self.rules = rules;
-		self.alive = True;
+# 	def __init__(self, rules, root_node):
+# 		self.start = root_node;
+# 		self.node_stack = list(start);
+# 		self.rules = rules;
+# 		self.alive = True;
 
-	"""
-	Causes the snake to grow itself by one node. It will grow multiple copies
-		of itself into all possible paths forward.
-	Causes the snake to add new one-node snakes in the places it grows. These
-		smaller snakes will have their start node be the same nodes that this
-		snake is growing into.
-	"""
-	def act(self):
+# 	"""
+# 	Causes the snake to grow itself by one node. It will grow multiple copies
+# 		of itself into all possible paths forward.
+# 	Causes the snake to add new one-node snakes in the places it grows. These
+# 		smaller snakes will have their start node be the same nodes that this
+# 		snake is growing into.
+# 	"""
+# 	def act(self):
 
-	"""
-	Will cause this snake to stop growing or creating new snakes.
-	Usually called when this matches no rules. Snakes with only one node are 
-		exempted from death, because they are exploring deeper into the tree.
-	"""
-	def die(self):
-		self.alive = False;
+# 	"""
+# 	Will cause this snake to stop growing or creating new snakes.
+# 	Usually called when this matches no rules. Snakes with only one node are 
+# 		exempted from death, because they are exploring deeper into the tree.
+# 	"""
+# 	def die(self):
+# 		self.alive = False;
