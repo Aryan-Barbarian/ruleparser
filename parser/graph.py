@@ -97,6 +97,7 @@ class NativeGraph(object):
 			if attribs["type"] == "parent":
 				ans.append(to_add)
 		return ans
+
 	def get_siblings(self, node):
 		return [self.nodes[v] for u,v,d in self._inner_graph.edges_iter(data=True) if d['type']=='sibling']
 
@@ -122,20 +123,18 @@ class NativeNode(object):
 		# self.hash = random.getrandbits(128) # TODO: is this fine?
 		self.graph = native_graph;
 		self._attr = dict();
+		self.children = list();
+		self.siblings = list();
 		if html is not None:
 			self.process(html);
 
 	def process(self, html):
-		# global BAD
 		if type(html) != BeautifulSoup and type(html) != Tag :
 			self["tag"] = "native_text"
 			return
 
 		self["tag"] = html.name
 		attribs = html.attrs # TODO: This is unicode
-		# if len(attribs) == 0 and html is not None and html.name == "li":
-		# 	print((html));
-		# 	BAD = html
 		for key, val in attribs.items():
 			if key == "id":
 				key = "ID"
@@ -155,22 +154,27 @@ class NativeNode(object):
 				old = children[i]
 				index_to_add = len(children);
 				dist = index_to_add - i - 1;
-				self.graph.add_sibling_edge(old, node, dist)
+				old.add_sibling(node, dist);
 
 			children.append(node)
 			self.add_child(node);
 
+	def add_sibling(self, other, dist):
+		self.graph.add_sibling_edge(self, other, dist)
+		self.siblings.append(other);
+
 	def add_child(self, child):
 		child.parent = self
 		self.graph.add_parent_edge(self, child)
+		self.children.append(child);
 
 	def __getitem__(self, name):
 
 		# We reroute children / sibling request to graph
-		if name == "children":
-			return self.graph.get_children(self);
-		if name == "siblings":
-			return self.graph.get_siblings(self);
+		# if name == "children":
+		# 	return self.graph.get_children(self);
+		# if name == "siblings":
+		# 	return self.graph.get_siblings(self);
 
 		# We store every other attribute
 		if name in self._attr:
@@ -192,8 +196,8 @@ class NativeNode(object):
 	def to_tree_dict(self):
 		# Returns a dict
 		attributes = self.get_attribute_dict();
-		if (self["children"] != None and len(self["children"]) > 0):
-			attributes["children"] = [child.to_tree_dict() for child in self["children"]]
+		if (len(self.children) > 0):
+			attributes["children"] = [child.to_tree_dict() for child in self.children]
 		attributes["name"] = self["tag"]
 		return attributes;
 
@@ -205,6 +209,8 @@ class NativeRootNode(NativeNode):
 		self.graph = native_graph
 		self._attr = dict()
 		self.parent = NEEDS_NO_PARENT
+		self.children = list();
+		self.siblings = list();
 
 		if html is not None:
 			self.process(html);
