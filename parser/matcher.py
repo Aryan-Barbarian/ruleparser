@@ -1,5 +1,8 @@
 
-RULE_REGEX = "(\[[^\]]*\])((=>|==)[\(|\[].*|(\(.*\)))"
+RULE_REGEX = "(\[[^\]]*\]) *((=>|==) *[\(|\[].*|(\(.*\)))"
+RULE_NODE_REGEX = "\[([^ ]*)?[ ]*:[ ]*\{(.*)\}\]" # Separates a [DIV : {XXXX}] into DIV and {XXXX}
+RULE_NODE_ATTRIBUTE_REGEX = "[,]*(([^=]*)=([^,]*))" # Must be global and match all matches
+
 class RuleEngine(object):
 	def __init__(self, rule_dict, graph):
 
