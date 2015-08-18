@@ -1,11 +1,10 @@
 import yaml
 import os
 base_loc = os.path.dirname(os.path.realpath(__file__))
-last_index = base_loc.rfind("/parser/")
-base_loc = base_loc[0:last_index] + "/"
+# TODO: Path might be wrong
 print("ASSUMING BASE DIRECTORY: {} ".format(base_loc))
 
-config_filepath = base_loc + "parser/config/config_data.yml"
+config_filepath = base_loc + "/config/config_data.yml"
 print(config_filepath);
 stream = open(config_filepath, "r")
 dictionary = yaml.load(stream)
