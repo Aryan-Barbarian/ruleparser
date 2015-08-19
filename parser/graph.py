@@ -9,7 +9,7 @@ from bs4 import NavigableString
 from bs4 import Comment
 from bs4 import Tag
 import re
-from config.config import CONFIG
+from config import CONFIG
 import os
 # TODO: Make this an uncollidable value or compare by identity
 DOES_NOT_OWN = "DOES NOT OWN THIS 193043249213" 
@@ -24,204 +24,127 @@ OUT_FORCE_DIR = CONFIG.get_path("output_force_dir")
 OUT_TREE_DIR = CONFIG.get_path("output_tree_dir")
 OUT_GEPHI_DIR = CONFIG.get_path("output_gephi_dir")
 def filepath_to_name(path):
-	fileRegex = re.compile('.*\/(.*)\.')
-	name = fileRegex.search(path).group(1);
-	return name;
+    fileRegex = re.compile('.*\/(.*)\.')
+    name = fileRegex.search(path).group(1);
+    return name;
+
+
+from HTMLParser import HTMLParser
+
+class MyHTMLParser(HTMLParser):
+
+    def feed(self, arg):
+        self.tag_stack = list()
+        root = self.graph.root_node
+        self.tag_stack.append(root)
+        return HTMLParser.feed(self, arg)
+
+    def handle_starttag(self, tag, attrs):
+        if len(tag) == 0:
+            return
+        attributes = {key:val for (key, val) in attrs}
+        if "class" in attributes:
+            attributes["class"] = attributes["class"].split()
+        graph = self.graph
+        new_node = NativeNode(graph, tag, attributes)
+
+        if len(self.tag_stack) > 0:
+            old_node = self.tag_stack[0]
+            old_node.add_child(new_node)
+        graph.add_node(new_node)
+
+        self.tag_stack.insert(0, new_node)
+
+    def handle_endtag(self, tag):
+        if tag != self.tag_stack[0].tag:
+            print("ERROR! Mismatched tags")
+            return
+        self.tag_stack.pop(0)
+
+    def handle_data(self, data):
+        self.tag_stack[0].add_data(data);
+
 
 class NativeGraph(object):
 
-	def __init__(self, html=None, filename=None):
-		name = "unknown_file"
-		if filename is not None:
-			path = IN_DIR + filename;
-			name = filepath_to_name(path);
-			html = BeautifulSoup(open(path))
+    def __init__(self, filepath):
 
-		self.name = name
-		self.html = html
+        self.class_index = dict();
+        self.id_index = dict();
+        self.nodes = set();
+        self.root_node = RootNode(self);
 
-		"""
-		- Nodes:
-			contain all attribute data of a node
-			contain a key we can lookup with in self.nodes
-		- Edges:
-			contains all sibling / parent data
-		"""
-		self._inner_graph = nx.MultiDiGraph();
-		self.nodes = dict(); # maps node.hash (hash int) => node (NativeNode)
-
-		body = self.html.body
-		root = NativeRootNode(self, body);
-		self.add_node(root);
+        parser = MyHTMLParser()
+        parser.graph = self
+        with open(filepath) as fp:
+            html_content = fp.read()
+            parser.feed(html_content)
 
 
-	"""
-	Takes in N1, N2, which are NativeNode objects.
-	Inserts them to our nx graph and does the work of conerting from
-		NativeNode to an nx node
-	"""
-	def add_edge(self, n1, n2, attribs):
+    def add_node(self, node):
+        if node in self.nodes:
+            print("Already contains node")
+        self.nodes.add(node)
+        
+        classes = node.classes
+        for c in classes:
+            if c not in self.class_index:
+                self.class_index[c] = list()
+            self.class_index[c].append(node)
 
-		if not self.has_node(n1):
-			self.add_node(n1);
-		if not self.has_node(n2):
-			self.add_node(n2);
-
-		# TODO: does this hash them correctly?
-		self._inner_graph.add_edge(hash(n1), hash(n2), key=hash(n1), attr_dict=attribs);
-
-	def add_sibling_edge(self, n1, n2, dist):
-		attribs = {"type":"sibling", "dist":dist}
-		self.add_edge(n1, n2, attribs)
-
-	def add_parent_edge(self, n1, n2):
-		attribs = {"type":"parent"}
-		self.add_edge(n1, n2, attribs)
-
-
-	def add_node(self, node):
-		# TODO: at risk of duplicating?
-		attribs = node.get_attribute_dict();
-		self._inner_graph.add_node(hash(node), attr_dict=attribs)
-		self.nodes[hash(node)] = node;
-
-	def has_node(self, node):
-		return hash(node) in self._inner_graph # TODO: Is this right?
-
-	def get_children(self, node):
-		raw = self._inner_graph[hash(node)]
-		ans = []
-		for other, rest in raw.items():
-			to_add = self.nodes[other]
-			attribs = (rest.items()[0][1])
-			if attribs["type"] == "parent":
-				ans.append(to_add)
-		return ans
-
-	def get_siblings(self, node):
-		return [self.nodes[v] for u,v,d in self._inner_graph.edges_iter(data=True) if d['type']=='sibling']
-
-	def dump_data(self):
-		info = json_graph.node_link_data(self._inner_graph)
-
-		if not os.path.exists(os.path.dirname(OUT_FORCE_DIR)):
-		    os.makedirs(os.path.dirname(OUT_FORCE_DIR))
-		if not os.path.exists(os.path.dirname(OUT_TREE_DIR)):
-		    os.makedirs(os.path.dirname(OUT_TREE_DIR))
-		if not os.path.exists(os.path.dirname(OUT_GEPHI_DIR)):
-		    os.makedirs(os.path.dirname(OUT_GEPHI_DIR))
-
-		json.dump(info, open(OUT_FORCE_DIR + self.name + ".json", "w"), indent=4)
-		json.dump(ROOT_NODE.to_tree_dict(), open(OUT_TREE_DIR + self.name + ".json", "w"), indent=4)
-		# nx.write_gexf(self._inner_graph, (OUT_GEPHI_DIR + self.name + ".gex") )
+        node_id = node.get_attribute("id")
+        if node_id not in self.id_index:
+            self.id_index[node_id] = list()
+        self.id_index[node_id].append(node)
 
 
 
 class NativeNode(object):
 
-	def __init__(self, native_graph, html=None):
-		# self.hash = random.getrandbits(128) # TODO: is this fine?
-		self.graph = native_graph;
-		self._attr = dict();
-		self.children = list();
-		self.siblings = list();
-		if html is not None:
-			self.process(html);
+    def __init__(self, graph, tag, attributes):
+        self.parent = None
+        self.attributes = attributes
+        self.tag = tag
+        self.classes = list()
+        if "class" in attributes:
+            self.classes = attributes["class"]
+        self.children = list()
+        self.data = ""
 
-	def process(self, html):
-		if type(html) != BeautifulSoup and type(html) != Tag :
-			self["tag"] = "native_text"
-			return
+    def add_child(self, other):
+        self.children.append(other);
 
-		self["tag"] = html.name
-		attribs = html.attrs # TODO: This is unicode
-		for key, val in attribs.items():
-			if key == "id":
-				key = "ID"
-			self[key] = val
+    def get_attribute(self, attribute_name):
+        if attribute_name in self.attributes:
+            return self.attributes[attribute_name]
+        else:
+            return None
 
-		child_HTMLs = html.contents
-		self.process_many(child_HTMLs)
+    def get_children(self):
+        return [node for node in self.children]
 
-	def process_many(self, html_list):
-		children = list();
-		for html in html_list:
-			node = NativeNode(self.graph, html) # recursively create them
-			node.parent = self;		# set their parent
+    def add_data(self, data):
+        self.data += " " + str(data)
 
-			# set the sibling distance
-			for i in range(len(children)):
-				old = children[i]
-				index_to_add = len(children);
-				dist = index_to_add - i - 1;
-				old.add_sibling(node, dist);
+    def __str__(self):
+        ans = "{}".format(self.tag)
+        for c in self.classes:
+            ans += ".{}".format(c)
+        # ans += "\n"
 
-			children.append(node)
-			self.add_child(node);
+        spacer = "|---|"
+        for child in self.get_children():
+            to_add = str(child)
+            to_add = to_add.split("\n")
+            for line in to_add:
+                ans += "\n{}{}".format(spacer, line)
+        return ans
 
-	def add_sibling(self, other, dist):
-		self.graph.add_sibling_edge(self, other, dist)
-		self.siblings.append(other);
+class RootNode(NativeNode):
+    def __init__(self, graph):
+        NativeNode.__init__(self, graph, "ROOT", dict())
+        self.tag = "ROOT"
 
-	def add_child(self, child):
-		child.parent = self
-		self.graph.add_parent_edge(self, child)
-		self.children.append(child);
-
-	def __getitem__(self, name):
-
-		# We reroute children / sibling request to graph
-		# if name == "children":
-		# 	return self.graph.get_children(self);
-		# if name == "siblings":
-		# 	return self.graph.get_siblings(self);
-
-		# We store every other attribute
-		if name in self._attr:
-			ans = self._attr[name];
-			return ans
-		else:
-			return DOES_NOT_OWN 
-
-	def __setitem__(self, name, value):
-		# TODO: Handle all the things we should pass to the graph instead
-		# WE MUST NEVER HAVE self.children OR self.siblings
-		if name == "_attr":
-			object.__setattr__(self, name, value)
-		self._attr[name] = value
-
-	def get_attribute_dict(self):
-		return self._attr # TODO: Is this mutable right now?
-
-	def to_tree_dict(self):
-		# Returns a dict
-		attributes = self.get_attribute_dict();
-		if (len(self.children) > 0):
-			attributes["children"] = [child.to_tree_dict() for child in self.children]
-		attributes["name"] = self["tag"]
-		return attributes;
-
-
-class NativeRootNode(NativeNode):
-
-	def __init__(self, native_graph, html=None):
-
-		self.graph = native_graph
-		self._attr = dict()
-		self.parent = NEEDS_NO_PARENT
-		self.children = list();
-		self.siblings = list();
-
-		if html is not None:
-			self.process(html);
-
-	def process(self, html):
-		global ROOT_NODE;
-		ROOT_NODE = self;
-		child_HTMLs = html.contents;
-		self.process_many(child_HTMLs)
-
-
-
-graph = NativeGraph(filename="umesh.html")
-graph.dump_data()
+in_file = os.path.join(IN_DIR, "test1.html")
+graph = NativeGraph(in_file)
+print(str(graph.root_node))
