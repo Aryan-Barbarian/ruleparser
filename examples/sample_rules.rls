@@ -1,5 +1,6 @@
 ### Rule Name ###
-(?P<name>td[property:val, property:val].hello.sup#unique%regex_string%!method_name!)
+(?P<name>td[property:val, property:val].hello.sup#unique!method_name!)
 	(?P<child1>td[property:val])
+		(?P<child3>td[property:val])
 	(?P<child2>)
 (?P<p2>div.hello)

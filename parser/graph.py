@@ -72,7 +72,7 @@ class NativeGraph(object):
         self.class_index = dict();
         self.id_index = dict();
         self.nodes = set();
-        self.root_node = RootNode(self);
+        self.root_node = NativeNodeRoot(self);
 
         parser = MyHTMLParser()
         parser.graph = self
@@ -130,7 +130,6 @@ class NativeNode(object):
         ans = "{}".format(self.tag)
         for c in self.classes:
             ans += ".{}".format(c)
-        # ans += "\n"
 
         spacer = "|---|"
         for child in self.get_children():
@@ -140,7 +139,7 @@ class NativeNode(object):
                 ans += "\n{}{}".format(spacer, line)
         return ans
 
-class RootNode(NativeNode):
+class NativeNodeRoot(NativeNode):
     def __init__(self, graph):
         NativeNode.__init__(self, graph, "ROOT", dict())
         self.tag = "ROOT"
