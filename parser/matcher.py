@@ -1,16 +1,27 @@
-
 import utils
 
 class Match(object):
 
-    def __init__(self):
+    def __init__(self, matches=None):
         self.groups = dict()
+        if matches is not None:
+            for match in matches:
+                self.groups.update(match.groups)
 
     def add_native_node(self, group_name, native_node):
         self.groups[group_name] = native_node
 
+    def merge(self, other):
+        new_dict = self.groups.copy()
+        new_dict.update(other.groups)
+        ans = Match()
+        ans.groups = new_dict()
+        return ans
+
     def __str__(self):
-        
+        ans = "";
+        for group_name, node in self.groups:
+
 
 class Rule(object):
     def __init__(self, name, rule_string): 
@@ -65,31 +76,54 @@ class RuleNode(object):
                 return False
         return True
 
-    def matches_generator(self, other, max_depth=-1):
+    def matches(self, other, max_depth=-1):
         if max_depth == 0:
-            yield Match()
+            return [Match()]
         max_depth -= 1
 
         if not self.matches_single(other):
-            yield False
+            return list()
 
         next_rules = self.get_children()
         next_natives = other.get_children()
 
         if len(next_natives) < len(next_rules):
-            yield False
+            return list()
 
-        possibles = [ list() for i in range(len(next_rules))]
-        for i in range(len(next_rules)):
-            for j in range(len(next_natives)):
+        ans = list();
+
+
+        # { rule_node => {native_node => list of matches between rule_node and native_node}}
+        match_dict = {rule_node : \
+           { native_node : rule_node.matches(native_node) \
+            for native_node in next_natives} \
+            for rule_node in next_rules}
+
+        #  at each i, it is the list of native_nodes in next_natives that next_rules[i] matches with
+        possible_natives = [ [next_native for next_native in next_natives\
+            if len(match_dict[next_rule][next_native]) > 0] \
+            for next_rule in next_rules]
+
+        # native_combos[i] represents a possible index j, such that next_rules[i] matches next_natives[j]
+        native_combos = utils.enumerate_combinations(possible_natives)
+
+
+        for native_combo in native_combos:
+            curr_entry = [list() for i in range(len(native_combo))]
+            for i in range(len(native_combo)):
                 rule_node = next_rules[i]
-                group_name = rule_node.name
-                native_node = next_natives[j]
-                gen = rule_node.matches_generator(native_node, max_depth)
-                for match in gen:
-                    if match and group_name is not None:
-                        match.add_native_node(group_name, native_node)
-                        yield match
+                native_node = native_combo[i]
+                curr_matches = match_dict[rule_node][native_node]
+                curr_entry[i] = curr_matches
+            curr_combos = utils.enumerate_combinations(curr_entry)
+
+            # each entry of curr_combo is one match
+            for curr_combo in curr_combos:
+                to_add = Match(matches=curr_combo)
+                to_add.add_native_node(self.name, other)
+                ans.append(to_add)
+
+        return ans
 
 
 
