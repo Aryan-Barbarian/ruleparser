@@ -20,14 +20,23 @@ class Match(object):
 
     def __str__(self):
         ans = "";
-        for group_name, node in self.groups:
+        for (group_name, node) in self.groups.items():
+            ans += group_name + "\n";
+        return ans;
 
 
 class Rule(object):
     def __init__(self, name, rule_string): 
         self.root = RuleNodeRoot(self)
         self.name = name
+        self.rule_string = rule_string; # TODO: Worth keeping?
+
     
+    def matches(self, native_graph) :
+        return self.root.matches(native_graph.root);
+
+    def __str__(self):
+        return str(self.root)
     
 
 class RuleNode(object):
@@ -46,12 +55,13 @@ class RuleNode(object):
         return [node for node in self.children]
 
     def __str__(self):
-        ans = "{}".format(self.name)
+        children = self.get_children();
+        ans = "{} -- {} ".format(self.name, len(children))
         for c in self.classes:
             ans += ".{}".format(c)
 
         spacer = "|---|"
-        for child in self.get_children():
+        for child in children:
             to_add = str(child)
             to_add = to_add.split("\n")
             for line in to_add:

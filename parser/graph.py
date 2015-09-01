@@ -9,8 +9,9 @@ from bs4 import NavigableString
 from bs4 import Comment
 from bs4 import Tag
 import re
-from config import CONFIG
+from parser.config import CONFIG
 import os
+
 # TODO: Make this an uncollidable value or compare by identity
 DOES_NOT_OWN = "DOES NOT OWN THIS 193043249213" 
 NEEDS_NO_PARENT = "THIS IS THE ROOT NODE 123182381924"
@@ -35,7 +36,7 @@ class MyHTMLParser(HTMLParser):
 
     def feed(self, arg):
         self.tag_stack = list()
-        root = self.graph.root_node
+        root = self.graph.root
         self.tag_stack.append(root)
         return HTMLParser.feed(self, arg)
 
@@ -72,7 +73,7 @@ class NativeGraph(object):
         self.class_index = dict();
         self.id_index = dict();
         self.nodes = set();
-        self.root_node = NativeNodeRoot(self);
+        self.root = NativeNodeRoot(self);
 
         parser = MyHTMLParser()
         parser.graph = self
@@ -143,7 +144,3 @@ class NativeNodeRoot(NativeNode):
     def __init__(self, graph):
         NativeNode.__init__(self, graph, "ROOT", dict())
         self.tag = "ROOT"
-
-in_file = os.path.join(IN_DIR, "test1.html")
-graph = NativeGraph(in_file)
-print(str(graph.root_node))

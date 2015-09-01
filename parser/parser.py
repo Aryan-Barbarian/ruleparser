@@ -34,11 +34,11 @@ class RuleFileParser(object):
                     else:
                         curr_rule_string += line + "\n"
 
-        if curr_rule_name is not None:
-            new_rule = self.parse_rule(curr_rule_name, curr_rule_string)
-            curr_rule_string = ""
-            curr_rule_name = None
-            yield new_rule
+                if curr_rule_name is not None:
+                    new_rule = self.parse_rule(curr_rule_name, curr_rule_string)
+                    curr_rule_string = ""
+                    curr_rule_name = None
+                    yield new_rule
 
     def get_indentation(self, line):
         for i in range(len(line)):
@@ -90,8 +90,3 @@ class RuleFileParser(object):
 
         return ans;
 
-
-rule_path = "/home/aryan/code/ruleparser/examples/sample_rules.rls"
-parser = RuleFileParser(rule_path)
-for rule in parser.rule_generator():
-    print(rule.root)
